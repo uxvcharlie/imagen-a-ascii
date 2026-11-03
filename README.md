@@ -13,8 +13,8 @@ Convierte cualquier imagen en **ASCII art a color**: cada letra toma el color de
 ## Índice
 
 1. [Dos formas de usarlo](#dos-formas-de-usarlo)
-2. [Página web (sin instalar nada)](#1-página-web-sin-instalar-nada)
-3. [Comando de terminal](#2-comando-de-terminal)
+2. [Página web (sin instalar nada)](#2-página-web-sin-instalar-nada)
+3. [Comando de terminal](#3-comando-de-terminal)
    - [Windows](#windows) · [Linux](#linux) · [macOS](#macos) · [Sin instalar](#sin-instalar-cualquier-sistema)
    - [Cómo se usa](#cómo-se-usa) · [Opciones](#opciones) · [Recetas](#recetas)
 4. [Cómo funciona](#cómo-funciona)

@@ -1,5 +1,7 @@
-salidas/
+.venv/
+__pycache__/
+*.egg-info/
+build/
+dist/
 *-ascii.*
 !ejemplos/mago-ascii.png
-__pycache__/
-*.tmp.*

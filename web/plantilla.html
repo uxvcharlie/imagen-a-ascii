@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imagen a ASCII</title>
+<style>
+  :root {
+    --fondo: #0d1117; --panel: #161b22; --borde: #30363d; --texto: #e6edf3; --suave: #8b949e;
+    --acento: #d7a35c; --acento-osc: #3a2a14;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 20px 16px 8px; max-width: 1400px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; color: var(--suave); }
+  main { display: grid; grid-template-columns: 330px 1fr; gap: 16px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 14px; align-self: start; }
+  .soltar { display: block; border: 2px dashed var(--borde); border-radius: 10px; padding: 18px 12px; text-align: center;
+            cursor: pointer; color: var(--suave); transition: border-color .15s, background .15s; }
+  .soltar:hover, .soltar.encima { border-color: var(--acento); background: var(--acento-osc); color: var(--texto); }
+  .soltar strong { color: var(--texto); }
+  fieldset { border: 0; padding: 0; margin: 14px 0 0; }
+  legend { font-weight: 600; margin-bottom: 6px; }
+  .campo { margin: 10px 0; }
+  .campo label { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+  .campo output { color: var(--acento); font-variant-numeric: tabular-nums; }
+  .campo small { display: block; color: var(--suave); font-size: 12px; line-height: 1.35; }
+  input[type=range] { width: 100%; accent-color: var(--acento); }
+  select, input[type=text] { width: 100%; background: var(--fondo); color: var(--texto); border: 1px solid var(--borde);
+                             border-radius: 6px; padding: 6px 8px; font: inherit; }
+  .fila { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 14px; }
+  input[type=color] { width: 38px; height: 28px; border: 1px solid var(--borde); border-radius: 6px; background: none; padding: 0; }
+  button { font: inherit; border-radius: 8px; border: 1px solid var(--borde); background: #21262d; color: var(--texto);
+           padding: 8px 12px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--acento); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.principal { background: var(--acento); color: #1a1206; border-color: var(--acento); font-weight: 600; }
+  .botones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .botones .principal { grid-column: 1 / -1; }
+  .vista { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 14px; min-height: 300px;
+           display: flex; flex-direction: column; gap: 10px; }
+  .vista canvas { width: 100%; height: auto; border-radius: 6px; image-rendering: auto; }
+  .vacio { margin: auto; text-align: center; color: var(--suave); max-width: 420px; }
+  #estado { color: var(--suave); font-size: 13px; min-height: 1.4em; margin: 0; }
+  .ayuda { color: var(--suave); font-size: 13px; margin-top: 12px; }
+  a { color: var(--acento); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Imagen a ASCII</h1>
+  <p>Convierte cualquier imagen en ASCII art a color. Todo pasa en tu navegador: la imagen no se sube a ningún lado.</p>
+</header>
+
+<main>
+  <section class="panel" aria-label="Controles">
+    <label class="soltar" id="soltar" for="archivo">
+      <strong>Arrastra una imagen aquí</strong><br>o haz clic para elegirla<br>
+      <small>También puedes pegarla con Ctrl+V</small>
+      <input type="file" id="archivo" accept="image/*" hidden>
+    </label>
+    <div class="botones" style="margin-top:8px"><button id="ejemplo" type="button" style="grid-column:1/-1">Probar con una imagen de ejemplo</button></div>
+
+    <fieldset>
+      <legend>Detalle</legend>
+      <div class="campo">
+        <label for="columnas">Letras por fila <output id="o-columnas"></output></label>
+        <input type="range" id="columnas" min="40" max="400" step="5" value="200">
+        <small>Más letras = más detalle, pero letras más chicas.</small>
+      </div>
+      <div class="campo">
+        <label for="rampa">Caracteres</label>
+        <select id="rampa">
+          <option value="detallada">Detallada (70 caracteres)</option>
+          <option value="simple">Simple ( .:-=+*#%@)</option>
+          <option value="bloques">Bloques (░▒▓█)</option>
+          <option value="propia">Escribir los míos…</option>
+        </select>
+        <input type="text" id="propia" value=" .oO@" hidden aria-label="Caracteres propios, de vacío a lleno" style="margin-top:6px">
+        <small id="ayuda-propia" hidden>De vacío a lleno: el primero va en las zonas sin tinta.</small>
+      </div>
+      <div class="campo">
+        <label for="curva">Limpieza del fondo <output id="o-curva"></output></label>
+        <input type="range" id="curva" min="0.5" max="3" step="0.1" value="1.6">
+        <small>Más alto = fondo más vacío y figuras más marcadas.</small>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Imagen</legend>
+      <div class="campo">
+        <label for="negros">Negros <output id="o-negros"></output></label>
+        <input type="range" id="negros" min="0" max="45" step="1" value="16">
+      </div>
+      <div class="campo">
+        <label for="blancos">Blancos <output id="o-blancos"></output></label>
+        <input type="range" id="blancos" min="55" max="100" step="1" value="84">
+        <small>Juntar negros y blancos sube el contraste.</small>
+      </div>
+      <div class="campo">
+        <label for="brillo">Brillo <output id="o-brillo"></output></label>
+        <input type="range" id="brillo" min="50" max="200" step="1" value="112">
+      </div>
+      <div class="campo">
+        <label for="saturacion">Saturación <output id="o-saturacion"></output></label>
+        <input type="range" id="saturacion" min="0" max="300" step="5" value="145">
+      </div>
+      <div class="campo">
+        <label for="aclarar">Aclarar letras <output id="o-aclarar"></output></label>
+        <input type="range" id="aclarar" min="0.5" max="2" step="0.05" value="1.25">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Colores</legend>
+      <div class="fila"><input type="color" id="fondo" value="#0b1220"><label for="fondo">Color de fondo</label></div>
+      <div class="fila"><input type="checkbox" id="claro"><label for="claro">Fondo claro (lo oscuro lleva más tinta)</label></div>
+      <div class="fila"><input type="checkbox" id="unico"><label for="unico">Un solo color</label><input type="color" id="mono" value="#e6edf3" aria-label="Color único"></div>
+      <div class="fila"><input type="checkbox" id="negrita" checked><label for="negrita">Letra negrita</label></div>
+    </fieldset>
+
+    <div class="botones">
+      <button class="principal" id="png" type="button" disabled>Descargar PNG</button>
+      <button id="svg" type="button" disabled>Descargar SVG</button>
+      <button id="txt" type="button" disabled>Descargar TXT</button>
+      <button id="copiar" type="button" disabled>Copiar texto</button>
+      <button id="reiniciar" type="button">Valores por defecto</button>
+    </div>
+    <p class="ayuda">El PNG sale al doble de tamaño para que se vea nítido. El texto sirve para pegarlo en un chat o en un bloque de código.</p>
+  </section>
+
+  <section class="vista" aria-label="Resultado">
+    <p id="estado" role="status"></p>
+    <div class="vacio" id="vacio">Elige una imagen para ver aquí cómo queda.<br>Los cambios se ven al momento.</div>
+    <canvas id="lienzo" hidden></canvas>
+  </section>
+</main>
+
+<script>
+"use strict";
+const RAMPAS = {
+  detallada: " .'`^\",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
+  simple: " .:-=+*#%@",
+  bloques: " ░▒▓█",
+};
+const ASPECTO = 0.6;            // una letra monoespaciada mide 0.6 de ancho por 1 de alto
+const TAMANO = 10;              // px por letra en el resultado
+const FUENTE = "'Mono ASCII', 'Noto Sans Mono', 'DejaVu Sans Mono', Consolas, Menlo, monospace";
+const EJEMPLO = "data:image/png;base64,__EJEMPLO__";
+const $ = (id) => document.getElementById(id);
+const CONTROLES = ["columnas", "rampa", "propia", "curva", "negros", "blancos", "brillo", "saturacion",
+                   "aclarar", "fondo", "claro", "unico", "mono", "negrita"];
+const DEFECTO = Object.fromEntries(CONTROLES.map((id) => [id, $(id).type === "checkbox" ? $(id).checked : $(id).value]));
+
+// La fuente va dentro de la página (solo ASCII y bloques), así se ve igual en cualquier sistema.
+const fuentesListas = Promise.all([
+  new FontFace("Mono ASCII", "url(data:font/ttf;base64,__FUENTE_BOLD__)", { weight: "700" }),
+  new FontFace("Mono ASCII", "url(data:font/ttf;base64,__FUENTE_REGULAR__)", { weight: "400" }),
+].map((f) => f.load().then((cargada) => document.fonts.add(cargada)))).catch(() => {});
+
+let imagen = null, nombre = "imagen", ultimo = null, pendiente = 0;
+
+function leerOpciones() {
+  const rampa = $("rampa").value === "propia" ? $("propia").value : RAMPAS[$("rampa").value];
+  return {
+    columnas: +$("columnas").value, rampa: rampa.length >= 2 ? rampa : RAMPAS.detallada,
+    curva: +$("curva").value, negros: +$("negros").value, blancos: +$("blancos").value,
+    brillo: +$("brillo").value, saturacion: +$("saturacion").value, aclarar: +$("aclarar").value,
+    fondo: $("fondo").value, claro: $("claro").checked, mono: $("unico").checked ? $("mono").value : null,
+    negrita: $("negrita").checked,
+  };
+}
+
+// --- Color: misma conversión que colorsys de Python -------------------------------------------
+function rgbAHls(r, g, b) {
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (min + max) / 2;
+  if (min === max) return [0, l, 0];
+  const d = max - min, s = l <= 0.5 ? d / (max + min) : d / (2 - max - min);
+  const rc = (max - r) / d, gc = (max - g) / d, bc = (max - b) / d;
+  const h = r === max ? bc - gc : g === max ? 2 + rc - bc : 4 + gc - rc;
+  return [(((h / 6) % 1) + 1) % 1, l, s];
+}
+function tono(m1, m2, h) {
+  h = ((h % 1) + 1) % 1;
+  if (h < 1 / 6) return m1 + (m2 - m1) * h * 6;
+  if (h < 0.5) return m2;
+  if (h < 2 / 3) return m1 + (m2 - m1) * (2 / 3 - h) * 6;
+  return m1;
+}
+function hlsARgb(h, l, s) {
+  if (s === 0) return [l, l, l];
+  const m2 = l <= 0.5 ? l * (1 + s) : l + s - l * s, m1 = 2 * l - m2;
+  return [tono(m1, m2, h + 1 / 3), tono(m1, m2, h), tono(m1, m2, h - 1 / 3)];
+}
+const hex2 = (v) => Math.max(0, Math.min(255, Math.trunc(v))).toString(16).padStart(2, "0");
+
+// --- Imagen -> cuadrícula de (letra, color) --------------------------------------------------
+function reducir(img, cols, filas, fondo) {
+  // Se achica de mitad en mitad para que cada letra promedie bien su zona de la imagen.
+  let origen = img, w = img.naturalWidth, h = img.naturalHeight;
+  while (w / 2 >= cols * 2 && h / 2 >= filas * 2) {
+    const c = document.createElement("canvas");
+    c.width = Math.round(w / 2); c.height = Math.round(h / 2);
+    const x = c.getContext("2d"); x.imageSmoothingQuality = "high";
+    x.drawImage(origen, 0, 0, c.width, c.height);
+    origen = c; w = c.width; h = c.height;
+  }
+  const c = document.createElement("canvas");
+  c.width = cols; c.height = filas;
+  const x = c.getContext("2d", { willReadFrequently: true });
+  x.fillStyle = fondo; x.fillRect(0, 0, cols, filas);
+  x.imageSmoothingQuality = "high";
+  x.drawImage(origen, 0, 0, cols, filas);
+  return x.getImageData(0, 0, cols, filas).data;
+}
+
+function aCeldas(img, op) {
+  const filasN = Math.max(1, Math.round(op.columnas * img.naturalHeight / img.naturalWidth * ASPECTO));
+  const px = reducir(img, op.columnas, filasN, op.fondo);
+  const bajo = op.negros / 100, alto = Math.max(op.blancos / 100, bajo + 0.01);
+  // Sobre fondo oscuro las letras se aclaran; sobre fondo claro se oscurecen un poco.
+  const fondoClaro = [1, 3, 5].reduce((s, i) => s + parseInt(op.fondo.slice(i, i + 2), 16), 0) / (3 * 255) > 0.5;
+  const [factor, suma] = fondoClaro ? [0.85, 0] : [op.aclarar, 18];
+  const mono = op.mono ? op.mono.slice(1) : null, n = op.rampa.length;
+  const filas = [];
+  for (let f = 0; f < filasN; f++) {
+    const fila = [];
+    for (let c = 0; c < op.columnas; c++) {
+      const i = (f * op.columnas + c) * 4;
+      const nivel = [px[i], px[i + 1], px[i + 2]].map((v) =>
+        Math.pow(Math.min(1, Math.max(0, (v / 255 - bajo) / (alto - bajo))), 1 / 1.05));
+      let [h, l, s] = rgbAHls(...nivel);
+      l = Math.min(1, l * op.brillo / 100); s = Math.min(1, s * op.saturacion / 100);
+      const [r, g, b] = hlsARgb(h, l, s);
+      const luz = 0.2126 * r + 0.7152 * g + 0.0722 * b;           // pesos de la vista humana
+      const tinta = op.claro ? 1 - luz : luz;
+      const letra = op.rampa[Math.min(n - 1, Math.trunc(Math.pow(tinta, op.curva) * n))];
+      const color = mono || [r, g, b].map((v) => hex2(v * 255 * factor + suma)).join("");
+      fila.push([letra, color]);
+    }
+    filas.push(fila);
+  }
+  return filas;
+}
+
+function esClara(img) {     // lo transparente cuenta como oscuro, igual que en el comando
+  const px = reducir(img, 64, 64, "#000000");
+  let suma = 0;
+  for (let i = 0; i < px.length; i += 4) suma += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+  return suma / (64 * 64 * 255) > 0.6;
+}
+
+function* tramos(fila) {   // letras seguidas del mismo color van juntas
+  let actual = null, texto = "";
+  for (let [letra, color] of fila) {
+    if (letra === " ") color = actual;
+    if (color !== actual && texto) { yield [actual, texto]; texto = ""; }
+    actual = color; texto += letra;
+  }
+  if (texto) yield [actual, texto];
+}
+
+// --- Salidas ---------------------------------------------------------------------------------
+function dibujar(lienzo, filas, op, escala) {
+  const t = TAMANO * escala, ctx = lienzo.getContext("2d");
+  const letra = `${op.negrita ? 700 : 400} ${t}px ${FUENTE}`;
+  ctx.font = letra;
+  const ancho = ctx.measureText("M").width;
+  lienzo.width = Math.max(1, Math.round(filas[0].length * ancho));
+  lienzo.height = filas.length * t;
+  ctx.fillStyle = op.fondo; ctx.fillRect(0, 0, lienzo.width, lienzo.height);
+  ctx.font = letra; ctx.textBaseline = "alphabetic";
+  filas.forEach((fila, i) => {
+    let col = 0;
+    for (const [color, txt] of tramos(fila)) {
+      if (txt.trim()) { ctx.fillStyle = "#" + color; ctx.fillText(txt, col * ancho, (i + 0.8) * t); }
+      col += [...txt].length;
+    }
+  });
+}
+
+const aTexto = (filas) => filas.map((f) => f.map(([l]) => l).join("").trimEnd()).join("\n") + "\n";
+const escapar = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function aSvg(filas, op) {
+  const ancho = Math.round(filas[0].length * TAMANO * ASPECTO), alto = filas.length * TAMANO;
+  const lineas = filas.map((fila, i) => {
+    let partes = "";
+    for (const [c, txt] of tramos(fila)) partes += txt.trim() ? `<tspan fill="#${c}">${escapar(txt)}</tspan>` : escapar(txt);
+    return `<text x="0" y="${((i + 0.8) * TAMANO).toFixed(1)}" xml:space="preserve">${partes}</text>`;
+  }).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${ancho}" height="${alto}" viewBox="0 0 ${ancho} ${alto}">` +
+    `<rect width="100%" height="100%" fill="${op.fondo}"/><g font-family="${FUENTE.replace(/'Mono ASCII', /, "")}" ` +
+    `font-size="${TAMANO}" font-weight="${op.negrita ? 700 : 400}">${lineas}</g></svg>\n`;
+}
+
+function descargar(blob, archivo) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = archivo;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+// --- Interfaz --------------------------------------------------------------------------------
+function actualizarEtiquetas() {
+  for (const id of ["columnas", "curva", "negros", "blancos", "brillo", "saturacion", "aclarar"]) {
+    const v = $(id).value;
+    $("o-" + id).textContent = ["negros", "blancos", "brillo", "saturacion"].includes(id) ? v + " %" : v;
+  }
+  const propia = $("rampa").value === "propia";
+  $("propia").hidden = !propia; $("ayuda-propia").hidden = !propia;
+}
+
+function generar() {
+  pendiente = 0;
+  actualizarEtiquetas();
+  if (!imagen) return;
+  const op = leerOpciones();
+  const filas = aCeldas(imagen, op);
+  dibujar($("lienzo"), filas, op, Math.min(2, window.devicePixelRatio || 1));
+  ultimo = { filas, op };
+  $("vacio").hidden = true; $("lienzo").hidden = false;
+  for (const id of ["png", "svg", "txt", "copiar"]) $(id).disabled = false;
+  $("estado").textContent = `${nombre}: ${op.columnas} × ${filas.length} letras`;
+}
+const pedirGenerar = () => { if (!pendiente) pendiente = requestAnimationFrame(generar); };
+
+function cargar(archivo, etiqueta) {
+  if (!archivo) return;
+  const url = typeof archivo === "string" ? archivo : URL.createObjectURL(archivo);
+  const img = new Image();
+  img.onload = async () => {
+    await fuentesListas;
+    imagen = img;
+    nombre = (etiqueta || archivo.name || "imagen").replace(/\.[^.]+$/, "");
+    // Una imagen clara (como un dibujo sobre blanco) se ve mejor con fondo claro: se elige solo.
+    const clara = esClara(img);
+    $("claro").checked = clara;
+    $("fondo").value = clara ? "#f6f1e7" : "#0b1220";
+    generar();
+    if (clara) $("estado").textContent += " · imagen clara: activé el fondo claro";
+  };
+  img.onerror = () => { $("estado").textContent = "No se pudo abrir ese archivo como imagen."; };
+  img.src = url;
+}
+
+$("archivo").addEventListener("change", (e) => cargar(e.target.files[0]));
+$("ejemplo").addEventListener("click", () => cargar(EJEMPLO, "ejemplo"));
+const zona = $("soltar");
+zona.addEventListener("dragover", (e) => { e.preventDefault(); zona.classList.add("encima"); });
+zona.addEventListener("dragleave", () => zona.classList.remove("encima"));
+zona.addEventListener("drop", (e) => { e.preventDefault(); zona.classList.remove("encima"); cargar(e.dataTransfer.files[0]); });
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", (e) => { e.preventDefault(); cargar(e.dataTransfer.files[0]); });
+document.addEventListener("paste", (e) => {
+  const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith("image/"));
+  if (item) cargar(item.getAsFile(), "pegada");
+});
+for (const id of CONTROLES) $(id).addEventListener("input", pedirGenerar);
+
+$("png").addEventListener("click", () => {
+  const c = document.createElement("canvas");
+  dibujar(c, ultimo.filas, ultimo.op, 2);
+  c.toBlob((b) => descargar(b, `${nombre}-ascii.png`), "image/png");
+});
+$("svg").addEventListener("click", () =>
+  descargar(new Blob([aSvg(ultimo.filas, ultimo.op)], { type: "image/svg+xml" }), `${nombre}-ascii.svg`));
+$("txt").addEventListener("click", () =>
+  descargar(new Blob([aTexto(ultimo.filas)], { type: "text/plain;charset=utf-8" }), `${nombre}-ascii.txt`));
+$("copiar").addEventListener("click", async () => {
+  const texto = aTexto(ultimo.filas);
+  try { await navigator.clipboard.writeText(texto); }
+  catch {
+    const area = Object.assign(document.createElement("textarea"), { value: texto });
+    document.body.append(area); area.select(); document.execCommand("copy"); area.remove();
+  }
+  $("estado").textContent = "Texto copiado. Pégalo en un bloque de código para que no se desarme.";
+});
+$("reiniciar").addEventListener("click", () => {
+  for (const [id, v] of Object.entries(DEFECTO)) { if ($(id).type === "checkbox") $(id).checked = v; else $(id).value = v; }
+  if (imagen && esClara(imagen)) { $("claro").checked = true; $("fondo").value = "#f6f1e7"; }
+  pedirGenerar();
+});
+
+actualizarEtiquetas();
+if (new URLSearchParams(location.search).has("demo")) cargar(EJEMPLO, "ejemplo");
+</script>
+</body>
+</html>

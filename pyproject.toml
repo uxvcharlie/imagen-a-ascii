@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imagen-a-ascii"
+version = "1.0.0"
+description = "Convierte imágenes en ASCII art a color: PNG, JPG, WebP, SVG, TXT, HTML o directo en la terminal."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["pillow>=9.1"]
+authors = [{ name = "Carlos Rafael Umaña Vásquez" }]
+keywords = ["ascii", "ascii-art", "imagen", "cli"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Topic :: Multimedia :: Graphics :: Graphics Conversion",
+]
+
+[project.scripts]
+imagen-a-ascii = "imagen_a_ascii.cli:main"
+
+[project.urls]
+Repositorio = "https://github.com/uxvcharlie/imagen-a-ascii"
+
+[tool.setuptools]
+packages = ["imagen_a_ascii", "imagen_a_ascii.fuentes"]
+
+[tool.setuptools.package-data]
+"imagen_a_ascii.fuentes" = ["*.ttf", "OFL.txt"]

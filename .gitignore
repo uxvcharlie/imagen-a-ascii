@@ -1,0 +1,5 @@
+salidas/
+*-ascii.*
+!ejemplos/mago-ascii.png
+__pycache__/
+*.tmp.*
